@@ -1,76 +1,62 @@
-import type { Product } from "@/components/product/ProductCard";
+import { createClient } from "@/lib/supabase/client";
 
-export const products: Product[] = [
-  {
-    id: 1,
-    name: "Animal Colorful Digital Prints",
-    seller: "Trendshop",
-    price: 29,
-    oldPrice: 39,
-    category: "Graphics",
-    image: "/images/products/animal-colorful-digital-prints.jpg",
-  },
-  {
-    id: 2,
-    name: "Summer Fashion Top Lace",
-    seller: "Trendshop",
-    price: 65,
-    oldPrice: 79,
-    category: "Women's Clothing",
-    image: "/images/products/summer-fashion-top-lace.jpg",
-  },
-  {
-    id: 3,
-    name: "Women Lace Blouse",
-    seller: "Trendshop",
-    price: 69,
-    oldPrice: 79,
-    category: "Women's Clothing",
-    image: "/images/products/women-lace-blouse.jpg",
-  },
-  {
-    id: 4,
-    name: "Floral Women Sundress",
-    seller: "Admin",
-    price: 80,
-    oldPrice: 89,
-    category: "Women's Clothing",
-    image: "/images/products/floral-women-sundress.jpg",
-  },
-  {
-    id: 5,
-    name: "Gucci Nylon Fabric Smart Backpack",
-    seller: "Admin",
-    price: 55,
-    oldPrice: 69,
-    category: "Accessories",
-    image: "/images/products/gucci-backpack.jpg",
-  },
-  {
-    id: 6,
-    name: "Black Sneakers With White Sole",
-    seller: "Admin",
-    price: 69,
-    oldPrice: 89,
-    category: "Shoes",
-    image: "/images/products/black-sneakers.jpg",
-  },
-  {
-    id: 7,
-    name: "Women Saddle Handbag",
-    seller: "Admin",
-    price: 59,
-    oldPrice: 69,
-    category: "Accessories",
-    image: "/images/products/women-saddle-handbag.jpg",
-  },
-  {
-    id: 8,
-    name: "Handcrafted Decorative Pillow",
-    seller: "Admin",
-    price: 59,
-    oldPrice: 69,
-    category: "Home & Living",
-    image: "/images/products/decorative-pillow.jpg",
-  },
-];
+export type Product = {
+  id: string;
+  name: string;
+  seller_id: string | null;
+  category_id: string | null;
+  price: number;
+  old_price: number | null;
+  image_url: string | null;
+  description: string | null;
+  created_at: string;
+  category_name?: string;
+  seller_name?: string;
+};
+
+export async function getProducts(): Promise<Product[]> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      categories (name)
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching products:", error);
+    return [];
+  }
+
+  return (data || []).map((item: any) => ({
+    ...item,
+    category_name: item.categories?.name || "Uncategorized",
+    seller_name: "Admin",
+  }));
+}
+
+export async function getProductById(id: string): Promise<Product | null> {
+  const supabase = createClient();
+  
+  const { data, error } = await supabase
+    .from("products")
+    .select(`
+      *,
+      categories (name)
+    `)
+    .eq("id", id)
+    .single();
+
+  if (error || !data) {
+    console.error("Error fetching product:", error);
+    return null;
+  }
+
+  return {
+    ...data,
+    category_name: data.categories?.name || "Uncategorized",
+    seller_name: "Admin",
+  };
+}
